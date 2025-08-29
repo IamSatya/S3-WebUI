@@ -1,29 +1,39 @@
-version: '3.9'
+version: "3.9"
+
 services:
   server:
     build:
       context: .
-      dockerfile: Dockerfile.server
-    environment:
-      AWS_REGION: ap-south-1
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-      S3_BUCKET: ti-hackathon-2025
-      PORT: 4000
-      CORS_ORIGIN: http://localhost:5173
-      SIGNED_URL_TTL_SECONDS: 900
+      dockerfile: root/Dockerfile.server
+    env_file:
+      - server/.env
     ports:
       - "4000:4000"
     volumes:
-      - ./server:/app
+      - ~/.aws:/root/.aws:ro
+    profiles: ["prod"]
+    command: npm run start  # production start script
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   web:
     build:
       context: .
-      dockerfile: Dockerfile.web
-    environment:
-      - VITE_API_BASE=http://server:4000
+      dockerfile: root/Dockerfile.web
+    env_file:
+      - web/.env
     ports:
-      - "5173:5173"
+      - "80:5173"   # expose on port 80 for production
     depends_on:
       - server
+    profiles: ["prod"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5173"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
