@@ -1,0 +1,29 @@
+version: '3.9'
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    environment:
+      AWS_REGION: ap-south-1
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      S3_BUCKET: ti-hackathon-2025
+      PORT: 4000
+      CORS_ORIGIN: http://localhost:5173
+      SIGNED_URL_TTL_SECONDS: 900
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./server:/app
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    environment:
+      - VITE_API_BASE=http://server:4000
+    ports:
+      - "5173:5173"
+    depends_on:
+      - server
